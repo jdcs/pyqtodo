@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+#-*- coding: utf-8 -*-
 
 import sys
 from PyQt4 import QtGui
 import sqlite3 as db
+import codecs as cs
 
 DAYS = {
 	0: "Mon",
@@ -34,7 +36,9 @@ class Application(QtGui.QWidget):
 
 			print "SQLite version: %s" % data
 		except db.Error, e:
-			print "Error %s:" % e.args[0]
+			print "Error '%s'" % e.args[0]
+			mbox = QtGui.QMessageBox()
+			mbox.critical(self, 'Error', e.args[0])
 
 		finally:
 			if con:
@@ -45,7 +49,7 @@ class Application(QtGui.QWidget):
 		try:
 			con = db.connect(self.dbName)
 			cur = con.cursor()
-			cur.execute("SELECT time,note FROM todo WHERE day=%d" % day)
+			cur.execute("SELECT h,m,note FROM todo WHERE day=%d" % day)
 
 			data = cur.fetchall()
 
@@ -56,13 +60,23 @@ class Application(QtGui.QWidget):
 			print len(data), 'rows'
 			for i in data:
 				print i
-				self.results.addItem(i[0] + ' | ' + i[1])
+				h = str(i[0])
+				m = str(i[1])
+				note = unicode(i[2])
+				if int(i[0]) < 10:
+					h = '0' + str(i[0])
+				if int(i[1]) < 10:
+					m = '0' + str(i[1])
+				self.results.addItem(h + ':' + m + ' ' + note)
 
 			
 			self.results.show()
 
 		except db.Error, e:
-			print "Error %s:" % e.args[0]
+			print "Error '%s'" % e.args[0]
+			mbox = QtGui.QMessageBox()
+			mbox.critical(self, 'Error', e.args[0])
+
 
 		finally:
 			if con:
@@ -92,7 +106,15 @@ class Application(QtGui.QWidget):
 		self.results.move(10, 50)
 		self.results.resize(300, 200)
 
+		self.results.setStyleSheet("QListWidget::item { color: #0f0; border: 1px solid #0f0; border-radius: 5px; margin-bottom: 1px; background-color: #000; }")
+
 		self.findDay(self.cb.currentIndex())
+
+		gbox = QtGui.QGridLayout()
+		gbox.addWidget(self.cb)
+		gbox.addWidget(self.results)
+
+		self.setLayout(gbox)
 
 		self.setGeometry(300, 500, 350, 300)
 
