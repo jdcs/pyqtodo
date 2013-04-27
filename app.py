@@ -3,17 +3,18 @@
 
 import sys
 from PyQt4 import QtGui
+from PyQt4.QtCore import Qt
 import sqlite3 as db
-import codecs as cs
+from popen2 import popen2 as ps
 
 DAYS = {
-	0: "Mon",
-	1: "Tue",
-	2: "Wed",
-	3: "Thu",
-	4: "Fri",
-	5: "Sat",
-	6: "Sun",
+	0: "Sun",
+	1: "Mon",
+	2: "Tue",
+	3: "Wed",
+	4: "Thu",
+	5: "Fri",
+	6: "Sat",
 }
 
 class Application(QtGui.QWidget):
@@ -45,6 +46,7 @@ class Application(QtGui.QWidget):
 				con.close()
 
 	def findDay(self, day):
+		print 'list day:', day
 		con = None
 		try:
 			con = db.connect(self.dbName)
@@ -88,9 +90,11 @@ class Application(QtGui.QWidget):
 
 	def initUI(self):
 
-		QtGui.QToolTip.setFont(QtGui.QFont('SansSerif', 10))
+		try:
+			self.setAttribute(Qt.WA_Maemo5AutoOrientation, True)
+		except AttributeError, e:
+			print 'Platform is not Maemo:', e.args[0]
 
-		self.setToolTip('This is a <b>QWidget</b> widget')
 
 		self.cb = QtGui.QComboBox(self)
 		self.cb.move(10, 22)
@@ -101,14 +105,16 @@ class Application(QtGui.QWidget):
 
 		self.cb.currentIndexChanged.connect(self.getDay)
 
-
 		self.results = QtGui.QListWidget(self)
 		self.results.move(10, 50)
 		self.results.resize(300, 200)
 
-		self.results.setStyleSheet("QListWidget::item { color: #0f0; border: 1px solid #0f0; border-radius: 5px; margin-bottom: 1px; background-color: #000; }")
+		#self.results.setStyleSheet("QListWidget::item { color: #0f0; border: 1px solid #0f0; border-radius: 5px; margin-bottom: 1px; background-color: #000; }")
 
-		self.findDay(self.cb.currentIndex())
+		d = ps('date +%w')[0].read()
+		d = int(d[:1])
+		self.findDay(d)
+		self.cb.setCurrentIndex(d)
 
 		gbox = QtGui.QGridLayout()
 		gbox.addWidget(self.cb)
@@ -118,7 +124,7 @@ class Application(QtGui.QWidget):
 
 		self.setGeometry(300, 500, 350, 300)
 
-		self.setWindowTitle('Application');
+		self.setWindowTitle('PyQtodo');
 
 		self.show()
 
