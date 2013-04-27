@@ -79,8 +79,6 @@ class Application(QtGui.QWidget):
 			print "Error '%s'" % e.args[0]
 			mbox = QtGui.QMessageBox()
 			mbox.critical(self, 'Error', e.args[0])
-
-
 		finally:
 			if con:
 				con.close()
@@ -94,10 +92,10 @@ class Application(QtGui.QWidget):
 			it = self.results.selectedItems()[0]
 			i = self.results.row(it)
 			it = self.results.takeItem(i)
-			text = it.text()
+			text = unicode(it.text())
 			hm = text.split(' ')[0]
 			d = int(self.cb.currentIndex())
-			n = join(str(text).split(' ')[1:])
+			n = join(unicode(text).split(' ')[1:])
 			h = int(hm.split(':')[0])
 			m = int(hm.split(':')[1])
 			print d, h, m, n
@@ -108,18 +106,16 @@ class Application(QtGui.QWidget):
 	def addRow(self):
 		if not self.ib.isHidden():
 			self.getInp()
-			self.ib.setHidden(self.ib.setHidden(True))
+			self.ib.setHidden(True)
 			return
 		self.ib.setHidden(False)
 		self.ib.setText('Enter task here in "h:m some task" format')
 
 	def getInp(self):
-		n = len(self.ib.text())
-		c = self.ib.text()[n-1]
-		text = self.ib.text()
+		text = unicode(self.ib.text())
 		hm = text.split(' ')[0]
 		d = int(self.cb.currentIndex())
-		n = join(str(text).split(' ')[1:])
+		n = join(unicode(text).split(' ')[1:])
 		h = int(hm.split(':')[0])
 		m = int(hm.split(':')[1])
 		print d, h, m, n
@@ -175,12 +171,12 @@ class Application(QtGui.QWidget):
 		self.cb.currentIndexChanged.connect(self.getDay)
 
 		self.bt = QtGui.QPushButton(self)
-		self.bt.setStyleSheet("QPushButton { font-size: 32pt; }")
+		self.bt.setStyleSheet("QPushButton { font-size: 32pt; height: 30px; }")
 		self.bt.setText("+")
 		self.bt.clicked.connect(self.addRow)
 
 		self.btDel = QtGui.QPushButton(self)
-		self.btDel.setStyleSheet("QPushButton { font-size: 32pt; }")
+		self.btDel.setStyleSheet("QPushButton { font-size: 32pt; height: 30px; }")
 		self.btDel.setText("-")
 		self.btDel.clicked.connect(self.delRow)
 
