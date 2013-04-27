@@ -3,6 +3,7 @@
 
 import sys
 from PyQt4 import QtGui
+from string import join
 from PyQt4.QtCore import Qt
 import sqlite3 as db
 from popen2 import popen2 as ps
@@ -88,6 +89,76 @@ class Application(QtGui.QWidget):
 		print 'Index:', self.cb.currentIndex()
 		self.findDay(self.cb.currentIndex())
 
+	def delRow(self):
+		if len(self.results.selectedItems()):
+			it = self.results.selectedItems()[0]
+			i = self.results.row(it)
+			it = self.results.takeItem(i)
+			text = it.text()
+			hm = text.split(' ')[0]
+			d = int(self.cb.currentIndex())
+			n = join(str(text).split(' ')[1:])
+			h = int(hm.split(':')[0])
+			m = int(hm.split(':')[1])
+			print d, h, m, n
+			self.deleteRow(d, h, m)
+			self.results.removeItemWidget(it)
+
+
+	def addRow(self):
+		if not self.ib.isHidden():
+			self.getInp()
+			self.ib.setHidden(self.ib.setHidden(True))
+			return
+		self.ib.setHidden(False)
+		self.ib.setText('Enter task here in "h:m some task" format')
+
+	def getInp(self):
+		n = len(self.ib.text())
+		c = self.ib.text()[n-1]
+		text = self.ib.text()
+		hm = text.split(' ')[0]
+		d = int(self.cb.currentIndex())
+		n = join(str(text).split(' ')[1:])
+		h = int(hm.split(':')[0])
+		m = int(hm.split(':')[1])
+		print d, h, m, n
+		self.insertRow(d, h, m, n)
+		self.findDay(self.cb.currentIndex())
+		self.ib.setHidden(True)
+
+	def deleteRow(self, d, h, m):
+		try:
+			con = db.connect(self.dbName)
+			cur = con.cursor()
+			cur.execute("DELETE FROM todo WHERE day=%d AND h=%d AND m=%d;" % (d, h, m))
+			con.commit()
+
+		except db.Error, e:
+                        print "Error '%s'" % e.args[0]
+                        mbox = QtGui.QMessageBox()
+                        mbox.critical(self, 'Error', e.args[0])
+                finally:
+                        if con:
+                                con.close()
+
+	def insertRow(self, d, h, m, n):
+		try:                                                           
+			con = db.connect(self.dbName)
+			cur = con.cursor()
+			cur.execute("INSERT into todo VALUES \
+					 (%d, %d, %d, '%s');" % (d, h, m, n))
+			con.commit()
+
+		except db.Error, e:
+                        print "Error '%s'" % e.args[0]                         
+                        mbox = QtGui.QMessageBox()                             
+                        mbox.critical(self, 'Error', e.args[0])                
+                                                                               
+                finally:
+                        if con:
+                                con.close()
+
 	def initUI(self):
 
 		try:
@@ -95,32 +166,45 @@ class Application(QtGui.QWidget):
 		except AttributeError, e:
 			print 'Platform is not Maemo:', e.args[0]
 
-
 		self.cb = QtGui.QComboBox(self)
-		self.cb.move(10, 22)
-		self.cb.resize(300, 25)
+		self.cb.setStyleSheet("QComboBox { font-size: 22pt; }")
 
 		for k,v in DAYS.items():
 			self.cb.insertItem(k, v);
 
 		self.cb.currentIndexChanged.connect(self.getDay)
 
-		self.results = QtGui.QListWidget(self)
-		self.results.move(10, 50)
-		self.results.resize(300, 200)
+		self.bt = QtGui.QPushButton(self)
+		self.bt.setStyleSheet("QPushButton { font-size: 32pt; }")
+		self.bt.setText("+")
+		self.bt.clicked.connect(self.addRow)
 
-		#self.results.setStyleSheet("QListWidget::item { color: #0f0; border: 1px solid #0f0; border-radius: 5px; margin-bottom: 1px; background-color: #000; }")
+		self.btDel = QtGui.QPushButton(self)
+		self.btDel.setStyleSheet("QPushButton { font-size: 32pt; }")
+		self.btDel.setText("-")
+		self.btDel.clicked.connect(self.delRow)
+
+		self.ib = QtGui.QLineEdit(self)
+		self.ib.setHidden(True)
+		self.ib.returnPressed.connect(self.getInp)
+
+		self.results = QtGui.QListWidget(self)
 
 		d = ps('date +%w')[0].read()
 		d = int(d[:1])
 		self.findDay(d)
 		self.cb.setCurrentIndex(d)
 
-		gbox = QtGui.QGridLayout()
-		gbox.addWidget(self.cb)
-		gbox.addWidget(self.results)
+		self.gbox = QtGui.QGridLayout(self)
 
-		self.setLayout(gbox)
+		self.gbox.addWidget(self.cb)
+		self.gbox.addWidget(self.bt)
+		self.gbox.addWidget(self.btDel)
+		self.gbox.addWidget(self.ib)
+
+		self.gbox.addWidget(self.results)
+
+		self.setLayout(self.gbox)
 
 		self.setGeometry(300, 500, 350, 300)
 
