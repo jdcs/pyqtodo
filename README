@@ -1,0 +1,11 @@
+Simple todo list for week in Qt
+Dump sqlite table in app directory, .qtodo.db
+As follows
+CREATE TABLE todo (
+	day INTEGER,
+       	h INTEGER,
+       	m INTEGER,
+       	note VARCHAR(100),
+	UNIQUE(day, h, m)
+);
+

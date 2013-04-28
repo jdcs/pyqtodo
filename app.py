@@ -99,9 +99,43 @@ class Application(QtGui.QWidget):
 			h = int(hm.split(':')[0])
 			m = int(hm.split(':')[1])
 			print d, h, m, n
-			self.deleteRow(d, h, m)
+			self.deleteRow(d, h, m, n)
 			self.results.removeItemWidget(it)
 
+
+	def edRow(self):
+		text = ''
+		it = 0
+		if len(self.results.selectedItems()):
+			it = self.results.selectedItems()[0]
+			i = self.results.row(it)
+			it = self.results.takeItem(i)
+			text = unicode(it.text())
+		else:
+			return
+		self.ib.setHidden(False)
+		self.ib.setText(text)
+		self.results.removeItemWidget(it)
+		hm = text.split(' ')[0]
+		d = int(self.cb.currentIndex())
+		n = join(unicode(text).split(' ')[1:])
+		h = int(hm.split(':')[0])
+		m = int(hm.split(':')[1])
+		self.deleteRow(d, h, m, n)
+
+	def butsHide(self):
+		if not self.bt.isHidden():
+			self.btDel.setHidden(True)
+			self.btEd.setHidden(True)
+			self.bt.setHidden(True)
+			self.btHide.setText("v")
+			self.btHide.setToolTip("Expand toolbar")
+		else:
+			self.btDel.setHidden(False)
+			self.btEd.setHidden(False)
+			self.bt.setHidden(False)
+			self.btHide.setText("^")
+			self.btHide.setToolTip("Hide toolbar")
 
 	def addRow(self):
 		if not self.ib.isHidden():
@@ -123,11 +157,14 @@ class Application(QtGui.QWidget):
 		self.findDay(self.cb.currentIndex())
 		self.ib.setHidden(True)
 
-	def deleteRow(self, d, h, m):
+	def deleteRow(self, day, h, m, note):
 		try:
 			con = db.connect(self.dbName)
 			cur = con.cursor()
-			cur.execute("DELETE FROM todo WHERE day=%d AND h=%d AND m=%d;" % (d, h, m))
+			cur.execute("DELETE FROM todo WHERE		\
+					day=%d AND h=%d			\
+					AND m=%d AND note='%s';"	\
+					% (day,h,m,note))
 			con.commit()
 
 		except db.Error, e:
@@ -139,11 +176,11 @@ class Application(QtGui.QWidget):
                                 con.close()
 
 	def insertRow(self, d, h, m, n):
-		try:                                                           
+		try:
 			con = db.connect(self.dbName)
 			cur = con.cursor()
-			cur.execute("INSERT into todo VALUES \
-					 (%d, %d, %d, '%s');" % (d, h, m, n))
+			cur.execute("INSERT into todo(day,h,m,note) VALUES \
+					(%d, %d, %d, '%s');" % (d, h, m, n))
 			con.commit()
 
 		except db.Error, e:
@@ -171,18 +208,33 @@ class Application(QtGui.QWidget):
 		self.cb.currentIndexChanged.connect(self.getDay)
 
 		self.bt = QtGui.QPushButton(self)
-		self.bt.setStyleSheet("QPushButton { font-size: 32pt; height: 30px; }")
+		self.bt.setStyleSheet("QPushButton { font-size: 32pt; height: 30px; font-weight: bold; }")
 		self.bt.setText("+")
+		self.bt.setToolTip("Add")
 		self.bt.clicked.connect(self.addRow)
 
+		self.btEd = QtGui.QPushButton(self)
+		self.btEd.setStyleSheet("QPushButton { font-size: 15pt; height: 30px; font-weight: bold; }")
+		self.btEd.setText("\\")
+		self.btEd.setToolTip("Edit")
+		self.btEd.clicked.connect(self.edRow)
+
+
 		self.btDel = QtGui.QPushButton(self)
-		self.btDel.setStyleSheet("QPushButton { font-size: 32pt; height: 30px; }")
+		self.btDel.setStyleSheet("QPushButton { font-size: 32pt; height: 30px; font-weight: bold; }")
 		self.btDel.setText("-")
+		self.btDel.setToolTip("Delete")
 		self.btDel.clicked.connect(self.delRow)
 
 		self.ib = QtGui.QLineEdit(self)
 		self.ib.setHidden(True)
 		self.ib.returnPressed.connect(self.getInp)
+
+		self.btHide = QtGui.QPushButton(self)
+		self.btHide.setText("^")
+		self.btHide.setToolTip("Hide toolbar")
+		self.btHide.setStyleSheet("QPushButton { font-size: 12pt; height: 15px; font-weight: bold; padding-top: 5px; }")
+		self.btHide.clicked.connect(self.butsHide)
 
 		self.results = QtGui.QListWidget(self)
 
@@ -195,7 +247,9 @@ class Application(QtGui.QWidget):
 
 		self.gbox.addWidget(self.cb)
 		self.gbox.addWidget(self.bt)
+		self.gbox.addWidget(self.btEd)
 		self.gbox.addWidget(self.btDel)
+		self.gbox.addWidget(self.btHide)
 		self.gbox.addWidget(self.ib)
 
 		self.gbox.addWidget(self.results)
